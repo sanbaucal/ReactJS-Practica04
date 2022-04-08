@@ -1,27 +1,33 @@
 import './App.css';
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from './components/navbar';
 import Profile from "./components/profile";
 import Searchbar from './components/searchbar';
 import PostList from "./components/posts";
 import axios from "axios";
 import Login from './components/login';
+import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
 
-class App extends React.Component {
-  state = {
-    section: true,
-    posts: [],
-    postsDefault: [],
-    isLogged: false,
-    username: null,
-    searchText: "",
-  };
+const App = () => {
+  const [posts, setPosts] = useState([])
+  const [postsDefault, setPostsDefault] = useState([])
+  const [isLogged, setIsLogged] = useState(false)
+  const [username, setUsername] = useState(false)
 
-  componentDidMount() {
+  useEffect(() => {
     const token = localStorage.getItem("token");
-    const self = this;
     if (token) {
-      this.setState({ isLogged: true });
+      setUsername(localStorage.getItem("username"));
+      setIsLogged(true)
+    }
+    else{
+      setIsLogged(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isLogged) {
+      const token = localStorage.getItem("token");
       const config = {
         headers: { Authorization: `Bearer ${token}` },
       };
@@ -29,83 +35,74 @@ class App extends React.Component {
         .get("https://three-points.herokuapp.com/api/posts", config)
         .then((response) => {
           if (response.status === 200) {
-            self.setState({ posts: response.data, postsDefault: response.data });
+            setPosts(response.data);
+            setPostsDefault(response.data);
           }
         })
         .catch((err) => {
           console.log(err);
         });
     }
-    else{
-      this.setState({ isLogged: false });
-    }
-  }
+  }, [isLogged]);
 
-  onLoginComplete(valor) {
-    this.setState({ isLogged: valor });
-    this.componentDidMount();
-  }
-
-  onChangeView(valor) {
-    this.setState({ section: valor });
-  }
-
-  onSearchPosts(valor) {
-    const filterPosts = (valor, posts_aux) => {
+  const onSearchPosts = (valor) => {
+    const filterPosts = (str_value, posts_aux) => {
         const filterPosts = posts_aux.filter((val_post) =>
-          val_post.author.name.toLowerCase().includes(valor.toLowerCase())
+          val_post.author.name.toLowerCase().includes(str_value.toLowerCase())
         );
         return filterPosts;
     }
-    this.setState({
-      posts: filterPosts(valor, this.state.postsDefault),
-    });
+    setPosts(filterPosts(valor, postsDefault))
   }
 
-  render() {
-    return (
-      <main className="App">
-        <Navbar
-          view_active={this.state.section}
-          onChangeView={(valor) => {
-            this.onChangeView(valor);
-          }}
-        />
+  const onLogout = () => {
+    setIsLogged(false);
+    localStorage.clear()
+  }
 
-        {this.state.isLogged ? (
-          <div>
+  return (
+    <BrowserRouter>
+      <Navbar />
+      <Switch>
+        <Route path="/login">
+          {isLogged ? (
+            <Redirect to="/" />
+          ) : (
+            <Login onLoginComplete={(valor) => setIsLogged(valor)} />
+          )}
+        </Route>
+        <Route path="/profile">
+          {isLogged ? (
             <Profile
-              view_active={this.state.section}
               avatar="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-              username={localStorage.getItem("username")}
+              username={username}
               bio="Lorem ipsum dolor sit amet consectetur adipisicing elit. Qui
-                aspernatur dicta nobis maxime amet quaerat doloribus eligendi
-                officiis, eveniet commodi eum architecto? Esse alias odio ab illum
-                quod, culpa corporis."
+                  aspernatur dicta nobis maxime amet quaerat doloribus eligendi
+                  officiis, eveniet commodi eum architecto? Esse alias odio ab illum
+                  quod, culpa corporis."
+              onLogout={onLogout}
             />
+          ) : (
+            <Redirect to="/login" />
+          )}
+        </Route>
+        <Route exact path="/">
+          {isLogged ? (
             <div className="container">
               <Searchbar
-                view_active={this.state.section}
                 onSearch={(valor) => {
-                  this.onSearchPosts(valor);
+                  onSearchPosts(valor);
                 }}
               />
-              <PostList
-                view_active={this.state.section}
-                posts={this.state.posts}
-              />
+              <PostList posts={posts} />
             </div>
-          </div>
-        ) : (
-          <Login
-            onLoginComplete={(valor) => {
-              this.onLoginComplete(valor);
-            }}
-          />
-        )}
-      </main>
-    );
-  }
+          ) : (
+            <Redirect to="/login" />
+          )}
+        </Route>
+      </Switch>
+    </BrowserRouter>
+  );
 }
 
 export default App;

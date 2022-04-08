@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import moment from "moment";
 import Post from "./post";
 
-function PostList({ view_active, posts }) {
+const PostList = ({ posts }) => {
   const [spinner, setSpinner] = useState(true);
 
   useEffect(() => {
@@ -17,23 +17,23 @@ function PostList({ view_active, posts }) {
       </div>
     </div>
   ) : (
-    view_active && !spinner && (
+     !spinner && (
       <div className="row">
         {posts &&
           posts.length > 0 &&
-          posts.map((episode, i) => {
+          posts.map((postVal) => {
             return (
               <div
                 className="col-xs-12 col-sm-6 col-lg-4 col-xl-3 mb-3"
-                key={episode.id}
+                key={postVal.id}
               >
                 <Post
-                  autor={episode.author.name}
-                  text={episode.text.slice(0, 50)}
-                  image={episode.image}
-                  createAt={moment(episode.airdate).fromNow()}
-                  likes={episode.likes}
-                  comments={episode.comments.length}
+                  author={postVal.author.name}
+                  text={postVal.text.slice(0, 50)}
+                  image={postVal.image}
+                  createAt={moment(postVal.airdate).fromNow()}
+                  like={postVal.likes}
+                  comments={postVal.comments.length}
                 />
               </div>
             );
